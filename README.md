@@ -1,4 +1,4 @@
-# Scraper de Negócios do Google Maps
+# Scrapper de Negócios do Google Maps
 
 Este projeto realiza a coleta automatizada de informações de negócios a partir do Google Maps usando o `Playwright` com Python. Os dados coletados são salvos em arquivos Excel (`.xlsx`) e CSV (`.csv`).
 
@@ -41,6 +41,11 @@ playwright install chromium
 ```bash
 python app.py
 ```
+
+> Caso queira mais agilidade, pode inserir os termos da pesquisa diretamente no arquivo `filter.txt' e executar diretamente a extração de dados com o seguinte comando:
+> ```bash
+> python get_maps_lead.py
+> ```
 
 # Sobre os dados de entrada
 Você pode:

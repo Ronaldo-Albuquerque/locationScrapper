@@ -8,7 +8,7 @@ import time
 
 @dataclass
 class Business:
-    """holds business data from google maps api"""
+    """Armazena os dados de um negócio obtidos via API do Google Maps"""
 
     name: str = None
     address: str = None
@@ -19,7 +19,7 @@ class Business:
     latitude: float = None
     longitude: float = None
     
-    # Another fields available from MAPS API ... (não vamos utilizar)
+    # Outros campos disponíveis na API do Google Maps... (não vamos utilizar)
     # Title: str = None
     # Rating: str = None
     # Reviews: str = None
@@ -33,53 +33,49 @@ class Business:
 
 @dataclass
 class BusinessList:
-    """holds list of Business objects, and save to both excel and csv """
+    """Armazena uma lista de objetos Business e salva em arquivos Excel e CSV"""
     business_list: list[Business] = field(default_factory=list)
     save_at = 'output'
 
     def dataframe(self):
-        """transform business_list to pandas dataframe
-        Returns: pandas dataframe
+        """Transforma business_list em um DataFrame do pandas
+        Retorna: pandas DataFrame
         """
         return pd.json_normalize(
             (asdict(business) for business in self.business_list), sep="_"
         )
 
     def save_to_excel(self, filename):
-        """saves pandas dataframe to excel (xlsx) file
+        """Salva o DataFrame pandas em um arquivo Excel (.xlsx)
         Args:
-            filename (str): filename
+            filename (str): nome do arquivo
         """
-
         if not os.path.exists(self.save_at):
             os.makedirs(self.save_at)
         self.dataframe().to_excel(f"output/{filename}.xlsx", index=False)
 
     def save_to_csv(self, filename):
-        """saves pandas dataframe to csv file
+        """Salva o DataFrame pandas em um arquivo CSV
         Args:
-            filename (str): filename
+            filename (str): nome do arquivo
         """
-
         if not os.path.exists(self.save_at):
             os.makedirs(self.save_at)
         self.dataframe().to_csv(f"output/{filename}.csv", index=False)
 
-def extract_coordinates_from_url(url: str) -> tuple[float,float]:
-    """helper function to extract coordinates from url"""
+def extract_coordinates_from_url(url: str) -> tuple[float, float]:
+    """Função auxiliar para extrair coordenadas da URL"""
     
     coordinates = url.split('/@')[-1].split('/')[0]
-    # return latitude, longitude
+    # retorna latitude, longitude
     return float(coordinates.split(',')[0]), float(coordinates.split(',')[1])
 
 def main():
-            
     ########
-    # dados de entrada 
-    # vamos utilizar os filtros salvos anteriormente (filter.txt)
+    # Dados de entrada
+    # Vamos utilizar os filtros salvos anteriormente (filter.txt)
     ########
     
-    # read search from arguments
     parser = argparse.ArgumentParser()
     parser.add_argument("-s", "--search", type=str)
     parser.add_argument("-t", "--total", type=int)
@@ -91,36 +87,32 @@ def main():
     if args.total:
         total = args.total
     else:
-        # if no total is passed, we set the value to random big number
+        # se nenhum total for passado, usamos um valor grande aleatório
         total = 1_000_000
 
     if not args.search:
         search_list = []
-        # read search from input.txt file
+        # lê os termos de busca a partir do arquivo input.txt
         input_file_name = 'filter.txt'
-        # Get the absolute path of the file in the current working directory
         input_file_path = os.path.join(os.getcwd(), input_file_name)
-        # Check if the file exists
         if os.path.exists(input_file_path):
-        # Open the file in read mode
             with open(input_file_path, 'r') as file:
-            # Read all lines into a list
                 search_list = file.readlines()
                 
         if len(search_list) == 0:
-            print('Error occured: You must either pass the -s search argument, or add searches to input.txt')
+            print('Erro: você deve passar o argumento -s ou adicionar buscas ao arquivo filter.txt')
             sys.exit()
         
     ###########
-    # scraping data from maps. User terms in filter.txt file loaded previously)
+    # Fazendo scraping dos dados do Maps com os termos carregados do filter.txt
     ###########
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=False)
         page = browser.new_page()
 
-        page.goto("https://www.google.com/maps", timeout=60000)
-        # wait is added for dev phase. can remove it in production
-        page.wait_for_timeout(5000)
+        page.goto("https://www.google.com/maps", timeout=30000)
+        # espera extra na fase de desenvolvimento (pode ser removida depois)
+        # page.wait_for_timeout(5000)
         
         for search_for_index, search_for in enumerate(search_list):
             print(f"-----\n{search_for_index} - {search_for}".strip())
@@ -131,15 +123,15 @@ def main():
             page.keyboard.press("Enter")
             page.wait_for_timeout(5000)
 
-            # scrolling
-            page.wait_for_selector('//a[contains(@href, "https://www.google.com/maps/place")]') # aguarda load do lead na lista lateral
-            page.hover('//a[contains(@href, "https://www.google.com/maps/place")]' timeout=60000)
+            # rolagem da lista lateral
+            page.wait_for_selector('//a[contains(@href, "https://www.google.com/maps/place")]') # aguarda carregamento dos resultados
+            page.hover('//a[contains(@href, "https://www.google.com/maps/place")]', timeout=60000)
 
-            # this variable is used to detect if the bot
-            # scraped the same number of listings in the previous iteration
+            # variável usada para detectar se o bot
+            # já coletou todos os registros disponíveis
             previously_counted = 0
             while True:
-                time.sleep(5) # add additional timer (optional)
+                time.sleep(5)  # tempo extra (opcional)
                 page.mouse.wheel(0, 10000)
                 page.wait_for_timeout(6000)
 
@@ -153,11 +145,10 @@ def main():
                         '//a[contains(@href, "https://www.google.com/maps/place")]'
                     ).all()[:total]
                     listings = [listing.locator("xpath=..") for listing in listings]
-                    print(f"Total Scraped: {len(listings)}")
+                    print(f"Total coletado: {len(listings)}")
                     break
                 else:
-                    # logic to break from loop to not run infinitely
-                    # in case arrived at all available listings
+                    # lógica para evitar loop infinito
                     if (
                         page.locator(
                             '//a[contains(@href, "https://www.google.com/maps/place")]'
@@ -167,14 +158,14 @@ def main():
                         listings = page.locator(
                             '//a[contains(@href, "https://www.google.com/maps/place")]'
                         ).all()
-                        print(f"Arrived at all available\nTotal Scraped: {len(listings)}")
+                        print(f"Chegamos ao fim dos resultados disponíveis\nTotal coletado: {len(listings)}")
                         break
                     else:
                         previously_counted = page.locator(
                             '//a[contains(@href, "https://www.google.com/maps/place")]'
                         ).count()
                         print(
-                            f"Currently Scraped: ",
+                            f"Coletados até agora: ",
                             page.locator(
                                 '//a[contains(@href, "https://www.google.com/maps/place")]'
                             ).count(),
@@ -182,7 +173,7 @@ def main():
 
             business_list = BusinessList()
 
-            # scraping
+            # scraping dos dados individuais
             for listing in listings:
                 try:
                     listing.click()
@@ -194,17 +185,6 @@ def main():
                     phone_number_xpath = '//button[contains(@data-item-id, "phone:tel:")]//div[contains(@class, "fontBodyMedium")]'
                     review_count_xpath = '//button[@jsaction="pane.reviewChart.moreReviews"]//span'
                     reviews_average_xpath = '//div[@jsaction="pane.reviewChart.moreReviews"]//div[@role="img"]'
-                    
-                    # Title = '//div[@role="main" and @aria-label]//h1[@class="DUwDvf fontHeadlineLarge"]'
-                    # Rating = '//div[@role="main" and @aria-label]//div[@jsaction="pane.rating.moreReviews"]//span[@aria-hidden]'
-                    # Reviews = '//div[@role="main" and @aria-label]//div[@jsaction="pane.rating.moreReviews"]//span[contains(text(),"review")]'
-                    # Category = '//div[@role="main" and @aria-label]//button[@jsaction="pane.rating.category"]'
-                    # Address = '//div[@role="main" and @aria-label]//button[@data-item-id="address"]'
-                    # Opening_Hours = '//div[@role="main" and @aria-label]//img[@aria-label="Hours"]/../following-sibling::div[1]//tbody'
-                    # Website = '(//div[@role="main" and @aria-label]//a[@data-tooltip="Open website"])[1]'
-                    # Phone_Number = '(//div[@role="main" and @aria-label]//button[@data-tooltip="Copy phone number"])[1]'
-                    # Photos = '//div[@role="main" and @aria-label]//div[@class="YkuOqf"]'
-
                     
                     business = Business()
                     if len(listing.get_attribute(name_attibute)) >= 1:
@@ -242,21 +222,19 @@ def main():
                     else:
                         business.reviews_average = ""
                     
-                    
                     business.latitude, business.longitude = extract_coordinates_from_url(page.url)
 
                     business_list.business_list.append(business)
                 except Exception as e:
-                    print(f'Error occured: {e}')
+                    print(f'Erro: {e}')
             
             #########
-            # output
+            # saída de dados
             #########
             business_list.save_to_excel(f"search_{search_for}".replace(' ', '_'))
             business_list.save_to_csv(f"search_{search_for}".replace(' ', '_'))
 
         browser.close()
-
 
 if __name__ == "__main__":
     main()
