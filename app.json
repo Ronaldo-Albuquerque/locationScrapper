@@ -1,0 +1,41 @@
+{
+  "page": "Pesquisa Google Maps",
+  "fields": [
+    {
+      "name": "pais",
+      "label": "País",
+      "type": "string",
+      "size": 50,
+      "placeholder": "Digite o país",
+      "required": true
+    },
+    {
+      "name": "localidade",
+      "label": "Localidade",
+      "type": "string",
+      "size": 100,
+      "placeholder": "Digite a localidade",
+      "required": true
+    },
+    {
+      "name": "termo_palavra",
+      "label": "Termo/Palavra",
+      "type": "string",
+      "size": 100,
+      "placeholder": "Digite um termo ou palavra-chave",
+      "required": false
+    },
+    {
+      "name": "salvar",
+      "label": "Salvar",
+      "type": "button",
+      "action": "save_fields_to_file"
+    },
+    {
+      "name": "executar_automacao",
+      "label": "Executar Automação",
+      "type": "button",
+      "action": "run_script"
+    }
+  ]
+}
